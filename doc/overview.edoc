@@ -1,0 +1,24 @@
+
+			-*- html -*-
+
+	CWMP Protocolove rview page
+
+@author Heni
+@copyright ALU
+@version {@version}
+@title CWMP Client and TR-069 stack
+
+@doc This package contains TR-069 protocol stack implementation and CWMP user API.
+
+<a href="modules-frame.html" target="modulesFrame" class="package">
+  Modules list  
+</a>
+
+The <a href="application.html">Module design</a> and API description.
+
+<p>News in 0.0.1:
+<ul>
+  <li>Initial version tested. </li>
+</ul>
+</p>
+

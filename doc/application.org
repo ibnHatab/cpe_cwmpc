@@ -1,0 +1,37 @@
+#+STARTUP: showall hidestars
+
+#+OPTIONS: author:nil creator:nil ^:nil
+#+COMMENT: toc:nil
+#+STYLE: <link rel="stylesheet" type="text/css" href="doc-style.css" />
+#+STYLE: <link rel="stylesheet" type="text/css" href="stylesheet.css" />
+
+#+TAGS: DOCS(d) CODING(c) TESTING(t) PLANING(p)
+
+
+#+TITLE: CWMP Client Application
+
+
+* Overview
+  
+  This chapter describes the management of customer premises equipment
+  (CPE) by using the CPE WAN Management Protocol for Small Cells auto
+  configuration server (SC-ACS).
+
+  [[file:images/cwmp.png]]
+
+* Glosary
+
+  | autoconfiguration server (ACS)     | A server that provisions a device or a collection of devices. In SC-ACS, the ACS refers to the SC-ACS server and in some instances, the DPE.                                                                  |
+  | customer premises equipment (CPE)  | Terminating equipment, such as telephones, computers, and modems, supplied and installed at a customer location.                                                                                        |
+  | Small Cells ACS (SC-ACS)           | An integrated solution for managing and provisioning broadband home networks. SC-ACS is a scalable product capable of supporting millions of devices.                                                   |
+  | device provisioning engine (DPE)   | DPE servers cache device instructions and perform CWMP services. These distributed serves automatically synchronize with the LMS to obtain the latest instructions and provide SC-ACS scalability.      |
+  | fully qualified domain name (FQDN) | FQDN is the full name of a system, rather than just its hostname. For example, cisco is a hostname and www.cisco.com is an FQDN.                                                                        |
+  | HTTPS                              | See Secure Sockets Layer and Transport Layer Security.                                                                                                                                                  |
+  | provisioning API                   | A series of SC-ACS functions that programs can use to make the operating system perform various functions.                                                                                                 |
+  | provisioning groups                | Groupings of devices with a defined set of associated DPE servers, based on either network topology or geography.                                                                                       |
+  | publishing                         | Publishing provides provisioning information to an external datastore in real time. Publishing plug-ins must be developed to write data to a datastore.                                                 |
+  | redundancy                         | In internetworking, the duplication of devices, services, or connections so that, in the event of a failure, the redundant devices, services, or connections can perform the work of those that failed. |
+  | Lighradio management system (LMS)  | The LMS is the primary server in the SC-ACS provisioning system. It manages generation of device instructions, processes all API requests, and manages the SC-ACS system                                |
+  | template files                     | XML files that contain configuration or firmware rules for devices.                                                                                                                                     |
+  | TR-069                             | A standard which defines the CPE WAN Management Protocol (CWMP), which enables communication between CPE and an autoconfiguration server                                                                |
+  |                                    |                                                                                                                                                                                                         |
