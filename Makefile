@@ -32,6 +32,8 @@ orgs: orgs-doc orgs-README
 orgs-doc: $(DOCDIR)
 	@emacs -l orgbatch.el -batch --eval="(riak-export-doc-dir \"doc\" 'html)"
 	@cp  doc/*.html $(DOCDIR)
+	-@mkdir $(DOCDIR)/images
+	@cp  doc/images/*.png $(DOCDIR)/images
 
 orgs-README:
 	@emacs -l orgbatch.el -batch --eval="(riak-export-doc-file \"README.org\" 'ascii)"
@@ -40,12 +42,15 @@ orgs-README:
 
 clean:
 	$(REBAR) clean
-	@rm -rf $(DOCDIR)
-	@rm -rf logs
-	@rm -rf test/*.beam
-	@rm -rf .eunit
+	-@rm -rf $(DOCDIR)
+	-@rm -rf logs
+	-@rm -rf test/*.beam
+	-@rm -rf .eunit
+	-@rm -rf $(APP)_info
+	-@rm doc/application.html
+	-@rm README
 
-distclean:
+distclean: clean
 	$(REBAR) clean delete-deps
 
 # unitary tests
