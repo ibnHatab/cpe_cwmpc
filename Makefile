@@ -1,7 +1,7 @@
 
 REBAR='./rebar'
 
-APP = cwmp
+APP = cpe_cwmpc
 VSN = $(shell sed -n 's/.*{vsn,.*"\(.*\)"}.*/\1/p' src/$(APP).app.src)
 
 DOCDIR=$(APP)_info
@@ -48,17 +48,16 @@ clean:
 distclean:
 	$(REBAR) clean delete-deps
 
-install: all
-	mkdir -p $(DESTDIR)/lib/tr-$(TR_VSN)/
-	cp -r ebin $(DESTDIR)/lib/tr-$(TR_VSN)/
-
+# unitary tests
 utest:
-	$(REBAR) -v eunit skip_deps=true suite=cwmp_builder
+	$(REBAR) -v eunit skip_deps=true 
+#suite=cwmp_builder
 
 ut-shell:
 	exec erl -pa $(PWD)/apps/*/ebin -pa $(PWD)/deps/*/ebin -pa $(PWD)/.eunit -boot start_sasl -s reloader 
 
 
+# common tests
 test.spec: test.spec.in
 	cat test.spec.in | sed -e "s,@PATH@,$(PWD)," > $(PWD)/test.spec
 
@@ -88,26 +87,3 @@ dialyzer: compile
 	  -Werror_handling 	\
 	  -Wrace_conditions 	\
 	  ./ebin
-
-#	  -Wunderspecs		\
-# hardcheck
-#	  -Wspecdiffs		\
-#	  -Woverspecs 		\
-
-.PHONY: check-data
-
-DATA_XML=$(wildcard test/data/*.xml) $(wildcard test/hdm_trace_SUITE_data/*.xml)
-
-check-data: $(DATA_XML)
-	@for file in $(DATA_XML) ; do 	\
-		echo ; 			\
-		echo "-------------- $$file ----------------" ; \
-		xmllint --noout --path doc --schema cwmp-1-1.xsd $$file; \
-	done
-
-cmd:
-	erl -pa ebin -s tr_soap_parser parse_root_test test/data/Fault.xml -run init stop -noshell
-
-.PHONY: ctest deps
-
-dir-local: app

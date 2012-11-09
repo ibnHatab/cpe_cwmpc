@@ -1,0 +1,12 @@
+{application, cpe_cwmpc,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { cpe_cwmpc_app, []}},
+  {env, []}
+ ]}.
