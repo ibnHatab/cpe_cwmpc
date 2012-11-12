@@ -19,7 +19,7 @@
 
   [[file:images/cwmp.png]]
 
-* Glosary
+* Glossary
 
   | autoconfiguration server (ACS)     | A server that provisions a device or a collection of devices. In SC-ACS, the ACS refers to the SC-ACS server and in some instances, the DPE.                                                                  |
   | customer premises equipment (CPE)  | Terminating equipment, such as telephones, computers, and modems, supplied and installed at a customer location.                                                                                        |
@@ -35,3 +35,64 @@
   | template files                     | XML files that contain configuration or firmware rules for devices.                                                                                                                                     |
   | TR-069                             | A standard which defines the CPE WAN Management Protocol (CWMP), which enables communication between CPE and an autoconfiguration server                                                                |
   |                                    |                                                                                                                                                                                                         |
+
+* HTTP Session Client State Machine
+
+  [[file:images/HTTP_Session_Client.png]]
+
+  A HTTP client session is described by a state diagram. 
+
+* RPC Session Client State Machine
+
+  [[file:images/RPC_Session_Client.png]]
+
+
+  A RPC client session is described by a state diagram. The CWMP state diagram is hierarchical. 
+  At the first level it has 
+  - an initial state "0"
+  - a state "master", where cpe_cwmpc sends RPC requests to ACS and receives RPC responses from ACS
+  - a state "slave" , where cpe_cwmpc receives RPC requests from ACS and sends responses to ACS
+  - a final state "close"
+ 
+  The "master" state has the following sub-states: "Idle", "Request_Sent", "Response_Received", 
+  The "slave"  state has the following sub-states: "Hold", "Request_Received", "Response_Sent" 
+ 
+  During a session CPE can enter both master and slave state. 
+  The component plays the role of master, when it sends an RPC request and receives a response. It plays the role of slave, when it receives a RPC request and sends a response. 
+  The transition from master role to slave role is done at ACS' request (reception of a SOAP header HoldRequests = "1" (true)).
+  "Hold" state is equivalent to "Idle" state.
+
+  State transition from state A to state B is triggered by an event. An action is done in state B.
+
+  "Idle" -> "Send_Request"
+  - triggered by: request event from (external/internal) application
+  - action: sends ACS RPC request (Inform, TransferComplete) to ACS
+
+  "Send_Request" -> "Response_Received"
+  - triggered by: reception of RPC response (InformResponse, TransferCompleteResponse) 
+  - action: deliver the response to triggering application 
+              
+  "Response_Received" -> "Idle"
+  - triggered by: header HoldRequests absent or HoldRequest = 0(false) in most recent SOAP envelope contained in a HTTP response from ACS, no SOAP envelope in the HTTP response from ACS
+  - action: no
+
+  "Response_Received" -> "Hold"
+  - triggered by: header HoldRequests = 1(true) in the most recent SOAP envelope contained in a HTTP response from ACS
+  - action: no
+
+  "Hold" -> "Receive_Request"
+  - triggered by: CPE RPC request received from ACS (AddObject, DeleteObject, SetParameterValues, GetParameterValues, Reboot, Factoryreset, Download, GetRPCMethods?, GetParameterNames?)
+  - action: deliver request to (internal/external) application
+
+  "Receive_Request" -> "Response_Sent"
+  - triggered by: response event from (external/internal) application
+  - action: send CPE RPC response to ACS 
+
+  "Response_Sent" -> "Hold"
+  - triggered by: ?
+  - action: no
+
+  "Hold" -> "Idle"
+  - triggered by: HoldRequest = 0 (false), absent or SOAP envelope absent in most recent HTTP request/response from ACS
+  - action: no 
+
