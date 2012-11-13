@@ -1,0 +1,7 @@
+
+1. Get GIT repository (currently on caprica)
+{{{
+git clone gitolite@caprica:otp/cpe_cwmpc
+}}}
+
+
