@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="11.5.1">
+  <zoom_level>10</zoom_level>
+  <element>
+    <type>com.umlet.element.SequenceDiagram</type>
+    <coordinates>
+      <x>0</x>
+      <y>20</y>
+      <w>1210</w>
+      <h>410</h>
+    </coordinates>
+    <panel_attributes>title: cpe_cwmpc_sequence
+_cwmp~id1_|_RPC~id2_|_RpcSession(FSM)~id3_|_http~id4_|_TransSession(URI)~id5_|_ibrowse~id6_
+
+id1-&gt;id2:open(core)
+id1&gt;&gt;id2:{IP, Port, Prefix}
+
+id2-&gt;id4:open(RPCcli) 
+id2&gt;&gt;id4:{URI}
+
+id4-&gt;id6:start() 
+id4&gt;&gt;id6:&lt;FSM&gt;
+
+
+id4-&gt;id5:Idle()
+id4-&gt;id2:#trans_session{}
+
+id2-&gt;id3:#rpc_session{}
+id2&gt;&gt;id3:core{IP, Port, Prefix}
+
+
+
+
+
+
+
+
+
+
+
+
+
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>
