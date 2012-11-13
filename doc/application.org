@@ -40,59 +40,132 @@
 
   [[file:images/HTTP_Session_Client.png]]
 
-  A HTTP client session is described by a state diagram. 
+  A HTTP client session object is created at CPE connection initiation by the RPC session client object (when it is triggered to send an Inform request to the ACS).
+  
+  A HTTP client session is described by a state diagram. The HTTP client state diagram is hierarchical. 
+  At the first level it has 
+  - an initial state "idle"
+  - a state "in_request", where the HTTP layer sends a request to ACS and receives RPC responses from ACS
+  - a final state "closed"
+  
+  At creation the HTTP session client object is in the state "Idle". This object creation triggers also the creation of the underlying (ssh and TCP/IP) session object. 
+ 
+  The "in_request" state has the following sub-states: "pending_response", "pending_payload", "response_received".     
+   
+  A state transition from state A to state B is triggered by an event. An action is done in state B.
+
+  "idle" -> "pending_response"
+  - triggered by: HTTP POST request to send
+  - action: sends HTTP request POST to ACS, creates a transport session object ???
+
+  "pending_response" -> "pending_payload"
+  - triggered by: reception of HTTP response headers (from ibrowse)
+  - action: message assembly
+  NB. ibrowse does not return the entire network message at a time, but in sequencial parts
+
+  "pending_payload" -> "receive_response"
+  - triggered by: multiple reception of HTTP response body parts (from ibrowse)
+  - action: message assembly
+   NB. ibrowse does not return the entire network message at a time, but in sequencial parts
+
+  "receive_response" -> "idle"
+  - triggered by: HTTP response end (from ibrowse)
+  - action: message assembly, deliver response body and status code to higher layer
+
+  "in_request" -> "closed"
+  - triggered by: timeout (determined time not less than 30s), error
+  
 
 * RPC Session Client State Machine
 
   [[file:images/RPC_Session_Client.png]]
 
+  A RPC session client object is created at CPE connection initiation. 
 
+  Either of following events triggers an RPC session client object creation:
+  - initial installation of the CPE
+  - power-on or reset
+  - once every ManagementServer.PeriodicInformInterval
+  - asynchronous stimulus from ACS (CPE receives a valid ConnectionRequest from ACS)
+  - change of ACS' URL ???
+  - parameter change that requires Inform initiation
+  - parameter, that the ACS has marked "active notification", has changed value due to external cause (different from ACS)
+    NB. if the parameter is modified more than once before CPE is able to initiate the notification session, the CPE must only perform one notification
+    NB. if a parameter is modified by an external cause while a session is in progress, the change causes a new session to be established after the current session is terminated (it must not affect the current session)
+  - download/upload completion (succesful or unsuccessful) ???
+  - retry of an unsuccessful terminated session
+
+  Only if all of the following conditions are met an RPC client session is closed successful (and the associated object is destroyed):
+  - ACS has no further requests to send to the CPE (only if the most recent HTTP response from ACS was empty)
+  - CPE has no further requests to send to the ACS and the CPE has issued an empty HTTP POST to the ACS while HoldRequests is false
+  - CPE has received all outstanding response messages from ACS
+  - CPE has sent all outstanding response messages to the ACS
+  
+  Either of the following events triggers the closing of an unsuccessful RPC client session (and the struction of the associated object)
+  - no HTTP response received from ACS for a determined time period (not less than 30 s)
+  - a SOAP-layer fault (fault code other than 8005) in response to Inform
+  - a HTTP response from ACS, with XML malformed or invalid SOAP structure or a protocol violation
+  - a HTTP response from the ACS with a fault status code (4xx, 5xx)
+  NB. exception "401 Unauthorized" status code received for (number of max admitted retries - 1)    
+
+  All transaction sessions must begin with an Inform message from the CPE contained in the initial HTTP POST. An Inform message must not occur more than once during a session. This limitation does not apply to Inform retransmission due to 
+  - an HTTP "401 unauthorized" as part of the HTTP authorization process or 
+  - an HTTP 3xx status code received due to an HTTP redirect.
+  The session ceases when both the ACS and CPE have no more requests to sned and no responses remain due from either the ACS or the CPE. At such time the CPE must close the connection. No more than one transaction session between the CPE and its associated ACS can exist in time.
+  
   A RPC client session is described by a state diagram. The CWMP state diagram is hierarchical. 
   At the first level it has 
   - an initial state "0"
   - a state "master", where cpe_cwmpc sends RPC requests to ACS and receives RPC responses from ACS
   - a state "slave" , where cpe_cwmpc receives RPC requests from ACS and sends responses to ACS
   - a final state "close"
+  
+  At creation the RPC session client object is in the master initial state "0". 
  
-  The "master" state has the following sub-states: "Idle", "Request_Sent", "Response_Received", 
-  The "slave"  state has the following sub-states: "Hold", "Request_Received", "Response_Sent" 
+  The "master" state has the following sub-states: "idle", "request_sent", "response_received".   
+  The "slave"  state has the following sub-states: "hold", "request_received", "response_sent". 
  
-  During a session CPE can enter both master and slave state. 
+  During a RPC client session CPE passes the master state at least once and the slave state multiple times (as long as ACS requests it). 
   The component plays the role of master, when it sends an RPC request and receives a response. It plays the role of slave, when it receives a RPC request and sends a response. 
   The transition from master role to slave role is done at ACS' request (reception of a SOAP header HoldRequests = "1" (true)).
-  "Hold" state is equivalent to "Idle" state.
+  "hold" state is equivalent to "idle" state.
 
-  State transition from state A to state B is triggered by an event. An action is done in state B.
+  A state transition from state A to state B is triggered by an event. An action is done in state B.
 
-  "Idle" -> "Send_Request"
+  "idle" -> "send_request"
   - triggered by: request event from (external/internal) application
-  - action: sends ACS RPC request (Inform, TransferComplete) to ACS
+  - action: sends ACS RPC request (Inform, TransferComplete) to ACS, creates a transport session object ???
 
-  "Send_Request" -> "Response_Received"
+  "send_request" -> "response_received"
   - triggered by: reception of RPC response (InformResponse, TransferCompleteResponse) 
   - action: deliver the response to triggering application 
               
-  "Response_Received" -> "Idle"
+  "response_received" -> "idle"
   - triggered by: header HoldRequests absent or HoldRequest = 0(false) in most recent SOAP envelope contained in a HTTP response from ACS, no SOAP envelope in the HTTP response from ACS
   - action: no
 
-  "Response_Received" -> "Hold"
+  "response_received" -> "hold"
   - triggered by: header HoldRequests = 1(true) in the most recent SOAP envelope contained in a HTTP response from ACS
   - action: no
 
-  "Hold" -> "Receive_Request"
+  "hold" -> "receive_request"
   - triggered by: CPE RPC request received from ACS (AddObject, DeleteObject, SetParameterValues, GetParameterValues, Reboot, Factoryreset, Download, GetRPCMethods?, GetParameterNames?)
   - action: deliver request to (internal/external) application
 
-  "Receive_Request" -> "Response_Sent"
+  "receive_request" -> "response_sent"
   - triggered by: response event from (external/internal) application
   - action: send CPE RPC response to ACS 
 
-  "Response_Sent" -> "Hold"
+  "response_sent" -> "hold"
   - triggered by: ?
   - action: no
 
-  "Hold" -> "Idle"
+  "hold" -> "idle"
   - triggered by: HoldRequest = 0 (false), absent or SOAP envelope absent in most recent HTTP request/response from ACS
   - action: no 
 
+* Supervision
+
+  file:images/Supervision.png
+
+  Supervision process is responsable of starting, stopping and monitoring its child processes
