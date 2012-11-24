@@ -36,6 +36,39 @@
   | TR-069                             | A standard which defines the CPE WAN Management Protocol (CWMP), which enables communication between CPE and an autoconfiguration server                                                                |
   |                                    |                                                                                                                                                                                                         |
 
+* CPE Transaction Session
+
+  Either of following events triggers an CPE session client creation:
+  - initial installation of the CPE
+  - power-on or reset
+  - once every ManagementServer.PeriodicInformInterval
+  - asynchronous stimulus from ACS (CPE receives a valid ConnectionRequest from ACS)
+  - change of ACS' URL ???
+  - parameter change that requires Inform initiation
+  - parameter, that the ACS has marked "active notification", has changed value due to external cause (different from ACS)
+    NB. if the parameter is modified more than once before CPE is able to initiate the notification session, the CPE must only perform one notification
+    NB. if a parameter is modified by an external cause while a session is in progress, the change causes a new session to be established after the current session is terminated (it must not affect the current session)
+  - download/upload completion (succesful or unsuccessful) ???
+  - retry of an unsuccessful terminated session
+
+  Only if all of the following conditions are met an RPC client session is closed successful (and the associated object is destroyed):
+  - ACS has no further requests to send to the CPE (only if the most recent HTTP response from ACS was empty)
+  - CPE has no further requests to send to the ACS and the CPE has issued an empty HTTP POST to the ACS while HoldRequests is false
+  - CPE has received all outstanding response messages from ACS
+  - CPE has sent all outstanding response messages to the ACS
+  
+  Either of the following events triggers the closing of an unsuccessful RPC client session (and the struction of the associated object)
+  - no HTTP response received from ACS for a determined time period (not less than 30 s)
+  - a SOAP-layer fault (fault code other than 8005) in response to Inform
+  - a HTTP response from ACS, with XML malformed or invalid SOAP structure or a protocol violation
+  - a HTTP response from the ACS with a fault status code (4xx, 5xx)
+  NB. exception "401 Unauthorized" status code received for (number of max admitted retries - 1)    
+
+  All transaction sessions must begin with an Inform message from the CPE contained in the initial HTTP POST. An Inform message must not occur more than once during a session. This limitation does not apply to Inform retransmission due to 
+  - an HTTP "401 unauthorized" as part of the HTTP authorization process or 
+  - an HTTP 3xx status code received due to an HTTP redirect.
+  The session ceases when both the ACS and CPE have no more requests to sned and no responses remain due from either the ACS or the CPE. At such time the CPE must close the connection. No more than one transaction session between the CPE and its associated ACS can exist in time.
+ 
 * HTTP Session Client State Machine
 
   [[file:images/HTTP_Session_Client.png]]
@@ -81,37 +114,9 @@
   [[file:images/RPC_Session_Client.png]]
 
   A RPC session client object is created at CPE connection initiation. 
-
-  Either of following events triggers an RPC session client object creation:
-  - initial installation of the CPE
-  - power-on or reset
-  - once every ManagementServer.PeriodicInformInterval
-  - asynchronous stimulus from ACS (CPE receives a valid ConnectionRequest from ACS)
-  - change of ACS' URL ???
-  - parameter change that requires Inform initiation
-  - parameter, that the ACS has marked "active notification", has changed value due to external cause (different from ACS)
-    NB. if the parameter is modified more than once before CPE is able to initiate the notification session, the CPE must only perform one notification
-    NB. if a parameter is modified by an external cause while a session is in progress, the change causes a new session to be established after the current session is terminated (it must not affect the current session)
-  - download/upload completion (succesful or unsuccessful) ???
-  - retry of an unsuccessful terminated session
-
-  Only if all of the following conditions are met an RPC client session is closed successful (and the associated object is destroyed):
-  - ACS has no further requests to send to the CPE (only if the most recent HTTP response from ACS was empty)
-  - CPE has no further requests to send to the ACS and the CPE has issued an empty HTTP POST to the ACS while HoldRequests is false
-  - CPE has received all outstanding response messages from ACS
-  - CPE has sent all outstanding response messages to the ACS
-  
-  Either of the following events triggers the closing of an unsuccessful RPC client session (and the struction of the associated object)
-  - no HTTP response received from ACS for a determined time period (not less than 30 s)
-  - a SOAP-layer fault (fault code other than 8005) in response to Inform
-  - a HTTP response from ACS, with XML malformed or invalid SOAP structure or a protocol violation
-  - a HTTP response from the ACS with a fault status code (4xx, 5xx)
-  NB. exception "401 Unauthorized" status code received for (number of max admitted retries - 1)    
-
-  All transaction sessions must begin with an Inform message from the CPE contained in the initial HTTP POST. An Inform message must not occur more than once during a session. This limitation does not apply to Inform retransmission due to 
-  - an HTTP "401 unauthorized" as part of the HTTP authorization process or 
-  - an HTTP 3xx status code received due to an HTTP redirect.
-  The session ceases when both the ACS and CPE have no more requests to sned and no responses remain due from either the ACS or the CPE. At such time the CPE must close the connection. No more than one transaction session between the CPE and its associated ACS can exist in time.
+ 
+  The events listed in chapter "CPE transaction session" trigger the creation of an RPC session client object.
+  The events listed in chapter "CPE transaction Session" trigger the destruction of an RPC session client.
   
   A RPC client session is described by a state diagram. The CWMP state diagram is hierarchical. 
   At the first level it has 
@@ -168,4 +173,32 @@
 
   file:images/Supervision.png
 
-  Supervision process is responsable of starting, stopping and monitoring its child processes
+  Supervision process is responsable of starting, stopping and monitoring its child processes. The supervisor process is responsable of keeping its guarded child processes alive.
+  The supervision process keeps a list of supervised process specification.
+  The supervised process specification describes the strategy applied by the supervisor to keep the associated process alive. 
+  When the supervisor is started, the child processes are started in order from left to right according to the list. When the supervisor terminates, it will terminate its child processes in reverse start order (from right to left).
+
+  A specification entry has the following attributes:
+  - module name 
+  - type (ex. worker)
+  - hierarchical supervisor 
+  - startup strategy: 
+    - one_for_one:        if a child process terminates and should be restarted, only that child process is affected
+    - one_for_all:        if one child process terminates and should be restarted, all other child processes are terminated and then all child processes are restarted
+    - rest_for_one:       if one child process terminates and should be restarted, the remaining child processes (child processes, after the terminated child process in start order) are terminated; then the terminated child process and all child processes after it are restarted
+    - simple_one_for_one: simplified "one_for_one", where all child processes are dynamically added instances of the same process (they run the same code)
+  - restarts: number of minimum restarts done by the supervisor before ????
+  - limint:   number of maximum restarts done by the supervisor before ????
+
+  Below is the list of supervised process specifications (consider the order up->down equivalent to the order left->right):
+ 
+  | module name        | type       | supervisor         | strategy  | restarts | limit |
+  | CLI_Supervisor     | supervisor |   -                | r_for_1   | 5        | 10    |
+  | Session_Supervisor | worker/s   | CLI_Supervisor     | s_1_for_1 | 5        | 10    |
+  | S_RPC              | worker     | Session_Supervisor | ?         | 5        | 10    |
+  | S_T                | worker     | Session_Supervisor | ?         | 5        | 10    |
+  | RPC                | worker     | CLI_Supervisor     | ?         | 5        | 10    |
+  | HTTP               | worker     | CLI_Supervisor     | ?         | 5        | 10    |
+  | IBrowse            | worker     | CLI_Supervisor     | ?         | 5        | 10    |
+ 
+ 
