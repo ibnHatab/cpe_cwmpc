@@ -1,12 +1,19 @@
 #+STARTUP: showall hidestars
-
-#+OPTIONS: author:nil creator:nil ^:nil
-#+COMMENT: toc:nil
-#+STYLE: <link rel="stylesheet" type="text/css" href="doc-style.css" />
-#+STYLE: <link rel="stylesheet" type="text/css" href="stylesheet.css" />
-
 #+TAGS: DOCS(d) CODING(c) TESTING(t) PLANING(p)
+#+LINK_UP: sitemap.html
+#+LINK_HOME: main.html
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:nil -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+DESCRIPTION: Augment design process with system property discovering aid.
+#+KEYWORDS: SmallCell, 
+#+LANGUAGE: en
 
+#+STYLE: <link rel="stylesheet" type="text/css" href="org-manual.css" />
+
+
+#+AUTHOR:    Mirela Nicola
+#+EMAIL:     mirela_nikola@yahoo.com
+#+DATE:      2013-03-07 Thu
 
 #+TITLE: CWMP Client Application
 
@@ -17,7 +24,7 @@
   (CPE) by using the CPE WAN Management Protocol for Small Cells auto
   configuration server (SC-ACS).
 
-  [[file:images/cwmp.png]]
+  [[file:Remote_CPE_Control_via_TR-069.jpg]]
 
 * Glossary
 
@@ -35,6 +42,14 @@
   | template files                     | XML files that contain configuration or firmware rules for devices.                                                                                                                                     |
   | TR-069                             | A standard which defines the CPE WAN Management Protocol (CWMP), which enables communication between CPE and an autoconfiguration server                                                                |
   |                                    |                                                                                                                                                                                                         |
+
+* Protocol Design 
+
+  [[file:images/Stack.png]]
+
+* Remote Procedure Call
+
+  [[file:images/cpeCwmpcSequence.png]]
 
 * CPE Transaction Session
 
