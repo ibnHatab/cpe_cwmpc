@@ -24,7 +24,7 @@
   (CPE) by using the CPE WAN Management Protocol for Small Cells auto
   configuration server (SC-ACS).
 
-  [[file:Remote_CPE_Control_via_TR-069.jpg]]
+  [[file:images/Remote_CPE_Control_via_TR-069.jpg]]
 
 * Glossary
 
