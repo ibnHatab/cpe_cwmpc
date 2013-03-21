@@ -56,12 +56,23 @@ distclean: clean
 	$(REBAR) clean delete-deps
 
 # unitary tests
-utest:
-	$(REBAR) -v eunit skip_deps=true 
-#suite=cwmp_builder
-
+SUT ?= cwmp_rpc_session
+SUITE=$(SUT)_tests
+utest: app
+	$(REBAR) -v eunit skip_deps=true suite=$(SUITE)
 ut-shell:
-	exec erl -pa $(PWD)/apps/*/ebin -pa $(PWD)/deps/*/ebin -pa $(PWD)/.eunit -boot start_sasl -s reloader 
+	exec erl -pa $(PWD)/apps/*/ebin -pa $(PWD)/deps/*/ebin -pa $(PWD)/.eunit -boot start_sasl
+
+vztest: utest
+	VIEWER=firefox $(PWD)/ebin/fsm_dynamic test/$(SUT).erl
+
+eqctest: utest
+	$(PWD)/ebin/fsm_eqc test/$(SUT) $(PWD)/ebin
+
+	firefox $(SUT)_eqc.jpg
+
+eqcunit:
+	EQC_VIEWER=firefox $(REBAR) -v eunit skip_deps=true suite=$(SUT)_eqc
 
 
 # common tests
