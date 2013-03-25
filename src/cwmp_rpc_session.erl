@@ -12,6 +12,8 @@
 
 -behaviour(gen_session).
 
+-include("cwmpc_internal.hrl").
+
 %% API
 -export([start_link/2, stop/0]).
 
@@ -36,25 +38,32 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-start_link(RpcClient, HttpSession) ->
-    gen_fsm:start_link({local, ?SERVER}, ?MODULE, {RpcClient, HttpSession}, []). %FIXME: gen_session is registered.
-
+start_link(CwmpClient, HttpSession) ->
+    ?cwmprt('start', [{client, CwmpClient}, {http_session, HttpSession}]),
+    gen_fsm:start_link({local, ?SERVER}, ?MODULE, {CwmpClient, HttpSession}, []).
+						%FIXME: gen_session is registered.
 stop() ->
     gen_fsm:sync_send_all_state_event(?SERVER,stop).
 
-%% -spec push() :: 
+
+%%%===================================================================
+%%% gen_session callbacks
+%%%===================================================================
 push(Message) ->
+    ?DBG({'rpc-push', Message}),
+    ?cwmprt('rpc-push', [{msg, Message}]),
     gen_fsm:sync_send_event(?SERVER, {push, Message}).
 
-pop({Message, Hold}) ->
-    gen_fsm:sync_send_event(?SERVER, {pop, Message, Hold}).
+pop(Message) ->
+    ?DBG(Message),
+    ?cwmprt('rpc-pop', [{msg, Message}]),
+    gen_fsm:sync_send_event(?SERVER, {pop, Message}).
 
 %%%===================================================================
 %%% gen_fsm callbacks
 %%%===================================================================
-init({RpcClient, HttpSession}) ->
-    {ok, idle, #state{client = RpcClient, lower = HttpSession}}.
+init({CwmpClient, HttpSession}) ->
+    {ok, idle, #state{client = CwmpClient, lower = HttpSession}}.
 
 %% BTW: Bidirectional communication anchored on master and slave states
 %% handle gen_fsm:send_event/2
@@ -72,41 +81,43 @@ slave(_Event, State) ->
 
 
 %% handle gen_fsm:sync_send_event/[2,3]
-idle({push, _Message}, _From, State) ->
+idle({push, {rpc, _Data} = _Message}, _From, State) ->
+    %% case cwmp_builder:build(Data) of
+
+    %% 	end
+
     Reply = ok,
     {reply, Reply, master, State};
 idle(_Event, _From, State) ->
     Reply = {error, invalid_message},
     {reply, Reply, idle, State}.
 
-master({pop, _Message, false}, _From, State) ->
+master({pop, {soap, _Data, false} = _Message}, _From, State) ->
     Reply = ok,
     {reply, Reply, idle, State};
-master({pop, _Message, true}, _From, State) ->
+master({pop, {soap, _Data, true} = _Message}, _From, State) ->
     Reply = ok,
     {reply, Reply, hold, State};
 master(_Event, _From, State) ->
     Reply = {error, invalid_message},
     {reply, Reply, master, State}.
-	
 
-hold({pop, _Message, false}, _From, State) ->
+hold({pop, {soap, _Data, false} = _Message}, _From, State) ->
     Reply = ok,
     {reply, Reply, idle, State};
-hold({pop, _Message, true}, _From, State) ->
+hold({pop, {soap, _Data, true} = _Message}, _From, State) ->
     Reply = ok,
     {reply, Reply, slave, State};
 hold(_Event, _From, State) ->
     Reply = {error, invalid_message},
     {reply, Reply, hold, State}.
 
-slave({push, _Message}, _From, State) ->
+slave({push, {rpc, _Data} = _Message}, _From, State) ->
     Reply = ok,
     {reply, Reply, hold, State};
 slave(_Event, _From, State) ->
     Reply = {error, invalid_message},
     {reply, Reply, slave, State}.
-
 
 %% @spec1 state_name(Event, From, State) ->
 %%                   {next_state, NextStateName, NextState} |

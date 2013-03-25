@@ -58,8 +58,13 @@ distclean: clean
 # unitary tests
 SUT ?= cwmp_rpc_session
 SUITE=$(SUT)_tests
+
 utest: app
+	$(REBAR) -v eunit skip_deps=true
+
+utest-suite: app
 	$(REBAR) -v eunit skip_deps=true suite=$(SUITE)
+
 ut-shell:
 	exec erl -pa $(PWD)/apps/*/ebin -pa $(PWD)/deps/*/ebin -pa $(PWD)/.eunit -boot start_sasl
 

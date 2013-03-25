@@ -13,7 +13,7 @@
 -behaviour(gen_session).
 
 %% API
--export([start_link/2]).
+-export([start_link/0]).
 
 %% gen_session callbacks
 -export([push/1, pop/1]).
@@ -24,58 +24,34 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {}).
+-record(state, {
+	 }).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Creates a gen_fsm process which calls Module:init/1 to
-%% initialize. To ensure a synchronized start-up procedure, this
-%% function does not return until Module:init/1 has returned.
-%%
-%% @spec start_link(Pid, []) -> {ok, Pid} | ignore | {error, Error}
-%% @end
-%%--------------------------------------------------------------------
-start_link(Manager, Param) ->
-    gen_fsm:start_link({local, ?SERVER % gen_session is not registered.
-		       }, ?MODULE, {Manager, Param}, []).
+start_link() ->
+    gen_fsm:start_link({local, ?SERVER}, ?MODULE, [], []).
+						%FIXME: gen_session is registered.
+stop() ->
+    gen_fsm:sync_send_all_state_event(?SERVER,stop).
 
 
 %%%===================================================================
 %%% gen_session callbacks
 %%%===================================================================
+push(Message) ->
+    gen_fsm:sync_send_event(?SERVER, {push, Message}).
 
-push(_Message) ->
-    ok.
+pop({Message, Hold}) ->
+    gen_fsm:sync_send_event(?SERVER, {pop, Message, Hold}).
 
-pop(_Message) ->
-    ok.
-    
 
 %%%===================================================================
 %%% gen_fsm callbacks
 %%%===================================================================
 
-    
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Whenever a gen_fsm is started using gen_fsm:start/[3,4] or
-%% gen_fsm:start_link/[3,4], this function is called by the new
-%% process to initialize.
-%%
-%% @spec init(Args) -> {ok, StateName, State} |
-%%                     {ok, StateName, State, Timeout} |
-%%                     ignore |
-%%                     {stop, StopReason}
-%% @end
-%%--------------------------------------------------------------------
-init({_Manager, _Param}) ->
+init({[]}) ->
     {ok, state_name, #state{}}.
 
 %%--------------------------------------------------------------------

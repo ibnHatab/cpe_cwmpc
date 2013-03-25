@@ -7,13 +7,13 @@
 
 -ifndef(cwmpc_internal_hrl).
 -define(cwmpc_internal_hrl, true).
+
 -include("cpe_host/src/host_internal.hrl").
 
--define(SERVICE, cwmpc).
--define(cwmpri(Label, Content), ?report_important(Label, ?SERVICE, Content)).
--define(cwmprv(Label, Content), ?report_verbose(Label,   ?SERVICE, Content)).
--define(cwmprd(Label, Content), ?report_debug(Label,     ?SERVICE, Content)).
--define(cwmprt(Label, Content), ?report_trace(Label,     ?SERVICE, Content)).
+-define(cwmpri(Label, Content), ?report_important(Label, cwmp, Content)).
+-define(cwmprv(Label, Content), ?report_verbose(Label,   cwmp, Content)).
+-define(cwmprd(Label, Content), ?report_debug(Label,     cwmp, Content)).
+-define(cwmprt(Label, Content), ?report_trace(Label,     cwmp, Content)).
 
 -endif. % -ifdef(cwmpc_internal_hrl).
 

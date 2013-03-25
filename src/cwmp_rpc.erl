@@ -48,7 +48,7 @@ start_link() ->
 create_protocol(Config) ->
     {ok, Config}.
 
-open(Manager, Param) ->
+open(InvokingProtocol, Param) ->
     %% gen_server:handle_call ....
     ok.
 
