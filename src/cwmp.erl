@@ -26,9 +26,11 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE). 
+-define(SERVER, ?MODULE).
 
--record(state, {}).
+-record(state, {
+	  session :: gen_protocol:session()
+	 }).
 
 -type common_reason() ::  'econn' | 'elogin' | 'eclosed' | term().
 
@@ -39,24 +41,40 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-stop() -> 
+stop() ->
     gen_server:call(?MODULE, stop).
 
-
--spec connect(cwmp:url(),
-	      Options :: [{atom(), term()}]) ->
-		     {'ok', gen_session:session()} | {'error', common_reason()}.
+-spec connect(cwmp:url(), Options :: [{atom(), term()}]) ->
+		     {'ok', gen_protocol:session()} | {'error', common_reason()}.
 connect(Host, Opts) when is_list(Opts) ->
     ?cwmprt("connect", [{host, Host}, {opts, Opts}]),
     try
+	URL = case xmerl_uri:parse(Host) of
+		  {error, E} -> throw(E);
+		  Res -> Res
+	      end,
 	ConnectOptions = connect_options(Opts),
-	gen_server:call(?SERVER, {connect, Host, ConnectOptions})
+
+	gen_server:call(?SERVER, {connect, URL, ConnectOptions})
     catch
 	throw:Error ->
 	    ?cwmprt("connect - error", [{error, Error}]),
-	    Error
+	    {error, Error}
     end.
 
+%% Request initiation
+request(Session, Message) ->
+    gen_server:call(?SERVER, {request, Session, Message}).
+
+confirm(Req_Id, Message) ->
+    gen_server:call(?SERVER, {confirm, Req_Id, Message}).
+
+%% Request processing
+indication(Session, Message) ->
+    gen_server:call(?SERVER, {indication, Session, Message}).
+
+response(Session, Message) ->
+    gen_server:call(?SERVER, {response, Session, Message}).
 
 
 %%%===================================================================
@@ -66,9 +84,13 @@ connect(Host, Opts) when is_list(Opts) ->
 init([]) ->
     {ok, #state{}}.
 
-handle_call({connect, _Host, _ConnectOptions}, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State};
+handle_call({connect, {_Proto,_Host,_Port,Path,Query} = Url, ConnectOptions}, _From, State) ->
+    ParticipandSet = [{sap, Path ++ Query}, 	% Rpc peer identity
+		      {url, Url}]		% HTTP Transport identity
+	++ ConnectOptions,			% Extra option for RPC and transport
+    SessionRpc = cwmp_rpc:open(cwmp, ParticipandSet),
+    {reply, SessionRpc, State#state{session = SessionRpc}};
+
 handle_call(stop, _From, S) ->
     {stop, normal, stopped, S}.
 
@@ -115,24 +137,4 @@ connect_options(Options) ->
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
-connect_test_() ->
-    { setup,
-      fun () ->
-	      ok = lager:start(),
-	      lager:set_loglevel(lager_console_backend, trace),
-	      cpe_trace:enable(max, all),
-	      cwmp:start_link()
-      end,
-      fun (_O)->
-	      cwmp:stop(),
-	      cpe_trace:disable()
-      end,
-      [ ?_test(begin
-		   AcsUrl = "http://135.243.24.162:7003/cwmpWeb/CPEMgt",
-		   Option = [{username, "mire"}, {password, "mire"}],
-		   cwmp:connect(AcsUrl, Option),
-		   ok
-	       end)
-      ]}.
-    
 -endif.

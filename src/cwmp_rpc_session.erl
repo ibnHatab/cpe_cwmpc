@@ -41,7 +41,7 @@
 start_link(CwmpClient, HttpSession) ->
     ?cwmprt('start', [{client, CwmpClient}, {http_session, HttpSession}]),
     gen_fsm:start_link({local, ?SERVER}, ?MODULE, {CwmpClient, HttpSession}, []).
-						%FIXME: gen_session is registered.
+
 stop() ->
     gen_fsm:sync_send_all_state_event(?SERVER,stop).
 
@@ -50,12 +50,10 @@ stop() ->
 %%% gen_session callbacks
 %%%===================================================================
 push(Message) ->
-    ?DBG({'rpc-push', Message}),
     ?cwmprt('rpc-push', [{msg, Message}]),
     gen_fsm:sync_send_event(?SERVER, {push, Message}).
 
 pop(Message) ->
-    ?DBG(Message),
     ?cwmprt('rpc-pop', [{msg, Message}]),
     gen_fsm:sync_send_event(?SERVER, {pop, Message}).
 
@@ -65,7 +63,7 @@ pop(Message) ->
 init({CwmpClient, HttpSession}) ->
     {ok, idle, #state{client = CwmpClient, lower = HttpSession}}.
 
-%% BTW: Bidirectional communication anchored on master and slave states
+%% NOTE: Bidirectional communication anchored on master and slave states
 %% handle gen_fsm:send_event/2
 idle(_Event, State) ->
     {next_state, idle, State}.
@@ -119,15 +117,6 @@ slave(_Event, _From, State) ->
     Reply = {error, invalid_message},
     {reply, Reply, slave, State}.
 
-%% @spec1 state_name(Event, From, State) ->
-%%                   {next_state, NextStateName, NextState} |
-%%                   {next_state, NextStateName, NextState, Timeout} |
-%%                   {reply, Reply, NextStateName, NextState} |
-%%                   {reply, Reply, NextStateName, NextState, Timeout} |
-%%                   {stop, Reason, NewState} |
-%%                   {stop, Reason, Reply, NewState}
-%% @end1
-%%--------------------------------------------------------------------
 
 %% handle gen_fsm:send_all_state_event/[2,3]
 handle_event(_Event, StateName, State) ->
