@@ -39,7 +39,7 @@
 %%% API
 %%%===================================================================
 start_link(CwmpClient, HttpSession) ->
-    ?cwmprt('start', [{client, CwmpClient}, {http_session, HttpSession}]),
+    ?cwmprt('start_link', [{client, CwmpClient}, {http_session, HttpSession}]),
     gen_fsm:start_link({local, ?SERVER}, ?MODULE, {CwmpClient, HttpSession}, []).
 
 stop() ->
@@ -50,11 +50,11 @@ stop() ->
 %%% gen_session callbacks
 %%%===================================================================
 push(Message) ->
-    ?cwmprt('rpc-push', [{msg, Message}]),
+    ?cwmprt('push', [{msg, Message}]),
     gen_fsm:sync_send_event(?SERVER, {push, Message}).
 
 pop(Message) ->
-    ?cwmprt('rpc-pop', [{msg, Message}]),
+    ?cwmprt('pop', [{msg, Message}]),
     gen_fsm:sync_send_event(?SERVER, {pop, Message}).
 
 %%%===================================================================

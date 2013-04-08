@@ -10,6 +10,8 @@
 
 -behaviour(gen_server).
 
+-include("cwmpc_internal.hrl").
+
 -behaviour(gen_protocol).
 
 %% API
@@ -65,8 +67,8 @@ demux(_Message) ->
 init([]) ->
     {ok, #state{registry = ets:new(registry,[set])}}.
 
-handle_call({open, InvokingProtocol, ParticipandSet}, _From, State) ->
-    [{sap, Sap} | Rest] = ParticipandSet,
+handle_call({open, InvokingProtocol, [{sap, Sap} | Rest] = _ParticipandSet}, _From, State) ->
+    ?cwmprt("handle_call", [open, {client, InvokingProtocol}, {sap, Sap}]),
     {ok, SessionHttp} = cwmp_http:open(rpc, Rest),
     SessionRpc = try_register(InvokingProtocol, State, Sap, SessionHttp),
     {reply, {ok, SessionRpc}, State};

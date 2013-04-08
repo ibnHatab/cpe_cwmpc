@@ -12,6 +12,8 @@
 
 -behaviour(gen_protocol).
 
+-include("cwmpc_internal.hrl").
+
 %% API
 -export([start_link/0, stop/0]).
 
@@ -65,8 +67,8 @@ demux(_Message) ->
 init([]) ->
     {ok, #state{registry = ets:new(registry,[set])}}.
 
-handle_call({open, InvokingProtocol, ParticipandSet}, _From, State) ->
-    [{url, Host} | Rest] = ParticipandSet,
+handle_call({open, InvokingProtocol, [{url, Host} | Rest] = _ParticipandSet}, _From, State) ->
+    ?cwmprt("handle_call", [open, {client, InvokingProtocol}, {url, Host}]),
     SessionHttp = try_register(InvokingProtocol, State, Host, Rest),
     {reply, {ok, SessionHttp}, State};
 

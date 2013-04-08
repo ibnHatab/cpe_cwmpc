@@ -125,9 +125,9 @@ connect_options(Options) ->
 	   (_) -> false
 	end,
     ValidOptions =
-	[{username, ValidateUser,     true, elogin},
-	 {password, ValidatePasswd,   true, elogin},
-	 {timeout,  ValidateTimeout,  false, ?CONNECTION_TIMEOUT}],
+	[{username, ValidateUser,    true,  elogin},
+	 {password, ValidatePasswd,  true,  elogin},
+	 {timeout,  ValidateTimeout, false, ?CONNECTION_TIMEOUT}],
     cpe_util:validate_options(Options, ValidOptions).
 
 

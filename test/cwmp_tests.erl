@@ -18,9 +18,14 @@
 cwmp_client_test_() ->
     { setup,
       fun () ->
+	      [ok = application:start(A) || A <- [
+						  sasl,
+						  lager,
+						  ibrowse
+						 ]],
 	      %% ok = lager:start(),
-	      %% lager:set_loglevel(lager_console_backend, trace),
-	      %% cpe_trace:enable(max, all),
+	      lager:set_loglevel(lager_console_backend, trace),
+	      cpe_trace:enable(max, all),
 	      {ok, _} = cwmp:start_link(),
 	      {ok, _} = cwmp_rpc:start_link(),
 	      {ok, _} = cwmp_http:start_link()		  

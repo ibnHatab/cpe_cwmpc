@@ -15,7 +15,7 @@
 -include("cwmpc_internal.hrl").
 
 %% API
--export([start_link/2]).
+-export([start_link/2, stop/1]).
 
 %% gen_session callbacks
 -export([push/1, pop/1]).
@@ -42,22 +42,23 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-start_link(Host, Option) ->
-    gen_fsm:start_link({local, ?SERVER}, ?MODULE, {Host, Option}, []).
+start_link(Host, Options) ->
+    ?cwmprt("start_link", [{host, Host}, {option, Options}]),
+    gen_fsm:start_link(?MODULE, [Host, Options], []).
 
-stop() ->
-    gen_fsm:sync_send_all_state_event(?SERVER,stop).
+stop(SessionId) ->
+    gen_fsm:sync_send_all_state_event(SessionId, stop).
 
 
 %%%===================================================================
 %%% gen_session callbacks
 %%%===================================================================
 push(Message) ->
-    ?cwmprt('http-push', [{msg, Message}]),
+    ?cwmprt('push', [{msg, Message}]),
     gen_fsm:sync_send_event(?SERVER, {push, Message}).
 
 pop({Message, Hold}) ->
-    ?cwmprt('http-pop', [{msg, Message}, {hold, Hold}]),    
+    ?cwmprt('pop', [{msg, Message}, {hold, Hold}]),    
     gen_fsm:sync_send_event(?SERVER, {pop, Message, Hold}).
 
 
@@ -65,15 +66,16 @@ pop({Message, Hold}) ->
 %%% gen_fsm callbacks
 %%%===================================================================
 
-init({{_Scheme, Host, Port, _Path, _Query} = Host, Option}) ->
-    {value, Username} = lists:keysearch(username, 1, Option),
-    {value, Password} = lists:keysearch(password, 1, Option),
-    {value, Timeout} = lists:keysearch(timeout, 1, Option),
+init([{_Scheme, HostName, Port, _Path, _Query} = Host, Options]) ->
+    ?DBG({Host, Options}),
+    {value, Username} = lists:keysearch(username, 1, Options),
+    {value, Password} = lists:keysearch(password, 1, Options),
+    {value, Timeout} = lists:keysearch(timeout, 1, Options),
 
     ibrowse:set_max_pipeline_size(Host, Port, ?MAX_PIPELINE_SIZE),
         
     {ok, idle, #state{host = Host, username = Username,
-		      password = Password, timeout = Timeout}}.
+    		      password = Password, timeout = Timeout}}.
 
 %% handle gen_fsm:send_event/2
 idle(_Event, State) ->

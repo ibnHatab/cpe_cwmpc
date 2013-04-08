@@ -30,7 +30,6 @@ self_test_() ->
 %%--------------------------------------------------------------------
 -define(SOAP_ENVELOPE, {'soapenv:Envelope',[],[]}).
 
-
 rpc_sesson_test_() ->
     {foreach,
      fun ()  -> {ok, Pid} = start_link(cli, low), Pid end,
